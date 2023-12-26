@@ -22,7 +22,8 @@ def get_embeddings_openai(model=MODEL):
     return torch.tensor(outputs)
 
 
-embeddings = get_embeddings_openai()
-corrector = vec2text.load_corrector(MODEL)
-text = vec2text.invert_embeddings(embeddings=embeddings.to("mps"), corrector=corrector)
-print(text[0])
+if __name__ == "__main__":
+    embeddings = get_embeddings_openai()
+    corrector = vec2text.load_corrector(MODEL)
+    text = vec2text.invert_embeddings(embeddings=embeddings, corrector=corrector)
+    print(text[0])

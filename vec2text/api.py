@@ -68,6 +68,7 @@ def invert_embeddings(
             sequence_beam_width == 0
         ), "can't set a nonzero beam width without multiple steps"
 
+        embeddings = embeddings.to(device)  # added HKKO
         regenerated = corrector.inversion_trainer.generate(
             inputs={
                 "frozen_embeddings": embeddings,
