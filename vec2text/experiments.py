@@ -7,6 +7,7 @@ import os
 import resource
 import sys
 from typing import Dict, Optional
+import multiprocessing
 
 import datasets
 import torch
@@ -45,7 +46,8 @@ os.environ["_WANDB_STARTUP_DEBUG"] = "true"
 os.environ["TOKENIZERS_PARALLELISM"] = "False"
 # os.environ["TOKENIZERS_PARALLELISM"] = "True"
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
 logger = logging.getLogger(__name__)
 
 # We maintain our own cache because huggingface datasets caching
@@ -69,6 +71,12 @@ def md5_hash_kwargs(**kwargs) -> str:
     s = json.dumps(safe_kwargs, sort_keys=True)
     return hashlib.md5(s.encode()).hexdigest()
 
+def _get_num_proc(world_size) -> int:
+    try:
+        # NOTE: only available on some Unix platforms
+        return (len(os.sched_getaffinity(0)) // world_size)  # type: ignore[attr-defined]
+    except AttributeError:
+        return (multiprocessing.cpu_count() // world_size)
 
 class Experiment(abc.ABC):
     def __init__(
@@ -468,7 +476,8 @@ class Experiment(abc.ABC):
                 remove_columns=["text"],
                 batched=True,
                 batch_size=1024,
-                num_proc=(len(os.sched_getaffinity(0)) // self._world_size),
+                # num_proc=(len(os.sched_getaffinity(0)) // self._world_size),
+                                num_proc=_get_num_proc(self._world_size),
                 desc="Running tokenizer on dataset",
             )
 
